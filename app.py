@@ -1,6 +1,5 @@
 """
-淘宝/京东个性化定价模拟器
-模拟不同用户特征下的价格差异
+淘宝/京东个性化定价模拟器 (垂直流式布局 + 神秘模式)
 """
 
 import streamlit as st
@@ -8,362 +7,596 @@ import pandas as pd
 import numpy as np
 import plotly.express as px
 import plotly.graph_objects as go
+import random
 
-# 页面配置
+# ==========================================
+# 1. 全局配置与状态管理
+# ==========================================
 st.set_page_config(
-    page_title="网购平台个性化定价模拟器",
+    page_title="揭秘大数据杀熟：电商个性化定价模拟器",
     page_icon="🛒",
-    layout="wide",
-    initial_sidebar_state="expanded"
+    layout="wide"  # 保持wide模式，虽然是上下结构，但内部可以用列来排版参数
 )
 
-# 自定义CSS
+# 初始化Session State：用于控制"价格是否揭晓"
+if 'is_revealed' not in st.session_state:
+    st.session_state.is_revealed = False
+
+# 商品配置库
+PRODUCTS = {
+    "无线耳机": {"base": 599, "desc": "🎧 热门款真无线蓝牙耳机", "category": "数码"},
+    "运动鞋": {"base": 199, "desc": "👟 新款缓震运动跑鞋", "category": "服饰"},
+    "轻薄笔记本": {"base": 4999, "desc": "💻 最新款超薄笔记本电脑", "category": "数码"},
+    "智能手表": {"base": 1299, "desc": "⌚️ 多功能健康监测智能手表", "category": "数码"},
+    "美妆礼盒": {"base": 899, "desc": "💄 高端护肤品套装", "category": "美妆"}
+}
+
+# ==========================================
+# 2. 样式优化 (CSS)
+# ==========================================
 st.markdown("""
 <style>
-    .main-header {
-        font-size: 2.5rem;
-        color: #FF6B6B;
-        text-align: center;
-        margin-bottom: 2rem;
+    /* 核心变量 */
+    :root {
+        --primary: #4ECDC4;
+        --secondary: #FF6B6B;
     }
-    .sub-header {
+    
+    /* 步骤标题样式 */
+    .step-header {
+        background: linear-gradient(90deg, rgba(78, 205, 196, 0.1) 0%, rgba(255, 255, 255, 0) 100%);
+        border-left: 5px solid var(--primary);
+        padding: 10px 20px;
+        margin-top: 20px;
+        margin-bottom: 20px;
+        border-radius: 0 10px 10px 0;
         font-size: 1.5rem;
-        color: #4ECDC4;
-        margin-top: 2rem;
+        font-weight: 600;
+        color: var(--primary);
     }
-    .price-card {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        color: white;
-        padding: 2rem;
-        border-radius: 15px;
-        text-align: center;
-        box-shadow: 0 10px 20px rgba(0,0,0,0.1);
-    }
-    .price-number {
-        font-size: 3.5rem;
-        font-weight: bold;
-        margin: 1rem 0;
-    }
-    .stButton>button {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        color: white;
-        border: none;
-        padding: 0.8rem 2rem;
-        border-radius: 25px;
-        font-size: 1rem;
-        font-weight: bold;
-        transition: all 0.3s;
-    }
-    .stButton>button:hover {
-        transform: translateY(-3px);
-        box-shadow: 0 5px 15px rgba(0,0,0,0.2);
-    }
-    .info-box {
-        background-color: #f8f9fa;
-        padding: 1.5rem;
+
+    /* 价格卡片容器 */
+    .metric-container {
+        background-color: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.1);
         border-radius: 10px;
-        border-left: 5px solid #4ECDC4;
-        margin: 1rem 0;
+        padding: 15px;
+        text-align: center;
+        transition: transform 0.2s;
+    }
+    
+    /* 价格数字 */
+    .price-big {
+        font-size: 3.5rem; /* 放大价格字体 */
+        font-weight: 800;
+        background: -webkit-linear-gradient(45deg, #FF6B6B, #FFD93D);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+    }
+    
+    /* 模糊遮罩效果 (用于神秘模式) */
+    .mystery-box {
+        filter: blur(8px);
+        user-select: none;
+        opacity: 0.5;
+        pointer-events: none;
+    }
+    
+    /* 揭晓按钮区域 */
+    .reveal-area {
+        text-align: center;
+        margin: 2rem 0;
+    }
+    
+    /* 因素卡片样式 */
+    .factor-card {
+        background: linear-gradient(135deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.02));
+        border-radius: 12px;
+        padding: 15px;
+        margin-bottom: 12px;
+        border-left: 4px solid var(--primary);
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    
+    .positive-impact {
+        border-left-color: #2ecc71 !important;
+        background: linear-gradient(135deg, rgba(46, 204, 113, 0.05), rgba(46, 204, 113, 0.02)) !important;
+    }
+    
+    .negative-impact {
+        border-left-color: #FF6B6B !important;
+        background: linear-gradient(135deg, rgba(255, 107, 107, 0.05), rgba(255, 107, 107, 0.02)) !important;
+    }
+    
+    /* 消费选项样式 */
+    .spending-option {
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 8px;
+        padding: 12px;
+        margin: 5px 0;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+    
+    .spending-option:hover {
+        background-color: rgba(255, 255, 255, 0.05);
+        border-color: var(--primary);
+    }
+    
+    .spending-option.selected {
+        background-color: rgba(78, 205, 196, 0.1);
+        border-color: var(--primary);
     }
 </style>
 """, unsafe_allow_html=True)
 
+# ==========================================
+# 3. 核心算法逻辑
+# ==========================================
 
-# 模拟定价算法
-def calculate_price(base_price, user_profile):
+def calculate_price_logic(base_price, user_profile):
     """
-    模拟个性化定价算法
-    base_price: 基础价格（元）
-    user_profile: 用户特征字典
-    返回：最终价格、价格构成详情
+    高级定价算法
     """
-    price = base_price
-    adjustments = []
+    # 因素分析数据容器
+    factors = []
 
-    # 1. 新老用户调整（新用户优惠）
+    current_price = base_price
+
+    # 1. 用户身份 (新客 vs 老用户)
     if user_profile["user_type"] == "new":
-        price *= 0.85  # 85折
-        adjustments.append(("新用户优惠", "-15%"))
+        change = -0.15 * base_price
+        factors.append({"name": "新客首单礼", "change": change, "type": "优惠"})
     elif user_profile["user_type"] == "loyal":
-        price *= 1.10  # 涨价10%（假设对忠诚用户）
-        adjustments.append(("忠诚用户溢价", "+10%"))
+        change = 0.05 * base_price
+        factors.append({"name": "老客隐形溢价", "change": change, "type": "加价"})
+    else:
+        change = 0
+        factors.append({"name": "普通用户", "change": 0, "type": "中性"})
 
-    # 2. 消费能力调整（基于历史消费）
-    if user_profile["spending_level"] == "high":
-        price *= 1.15  # 高消费用户涨价15%
-        adjustments.append(("高消费用户", "+15%"))
-    elif user_profile["spending_level"] == "low":
-        price *= 0.90  # 低消费用户降价10%
-        adjustments.append(("低消费用户优惠", "-10%"))
+    current_price += change
 
-    # 3. 设备类型调整（苹果税）
-    if user_profile["device"] == "ios":
-        price *= 1.08  # iOS用户涨价8%
-        adjustments.append(("iOS设备", "+8%"))
+    # 2. 设备与消费能力 (交互效应)
+    spending_score = user_profile["spending_level_norm"]
+    device = user_profile["device"]
 
-    # 4. 活跃度调整
-    if user_profile["activity"] == "high":
-        price *= 1.05  # 高活跃用户涨价5%
-        adjustments.append(("高活跃度", "+5%"))
-    elif user_profile["activity"] == "low":
-        price *= 0.95  # 低活跃用户降价5%
-        adjustments.append(("低活跃度", "-5%"))
+    device_markup = 0
+    # 苹果(iPhone)/鸿蒙统一处理
+    if device == "ios":
+        # iOS/鸿蒙基础溢价
+        markup_pct = 0.05
+        # 高消费 + iOS/鸿蒙 = 协同溢价
+        if spending_score > 80:
+            markup_pct = 0.12
+            factors.append({"name": "高端机型+高消费", "change": base_price * markup_pct, "type": "加价"})
+        else:
+            factors.append({"name": "苹果/鸿蒙设备差异", "change": base_price * markup_pct, "type": "加价"})
+        device_markup = base_price * markup_pct
+    else:
+        # 安卓低消费保护
+        if base_price > 500 and spending_score < 40:
+            device_markup = -base_price * 0.05
+            factors.append({"name": "价格敏感度保护", "change": device_markup, "type": "优惠"})
+        else:
+            factors.append({"name": "设备无差异", "change": 0, "type": "中性"})
 
-    # 5. 时间敏感度（看商品频率）
+    current_price += device_markup
+
+    # 3. 活跃度 (粘性) - 修改：区分不同活跃度
+    activity_score = user_profile["activity_score"]
+    act_change = 0
+
+    # 重新设计活跃度影响逻辑
+    if activity_score >= 85:  # 频繁使用
+        act_change = base_price * 0.03  # 高粘性溢价
+        factors.append({"name": "高粘性溢价", "change": act_change, "type": "加价"})
+    elif activity_score >= 65:  # 每天固定时间查看价格
+        act_change = base_price * 0.01  # 轻微溢价（平台认为有购买意图）
+        factors.append({"name": "固定查看意向溢价", "change": act_change, "type": "加价"})
+    elif activity_score >= 35:  # 一周一回或想起来才看
+        act_change = -base_price * 0.02  # 给予小优惠以刺激消费
+        factors.append({"name": "中等活跃度优惠", "change": act_change, "type": "优惠"})
+    else:  # 必须购买时再使用
+        act_change = -base_price * 0.05  # 给予较大优惠以吸引购买
+        factors.append({"name": "促活优惠", "change": act_change, "type": "优惠"})
+
+    current_price += act_change
+
+    # 4. 浏览频率 - 修改：首次浏览提供30元折扣
+    freq_change = 0
     if user_profile["frequency"] == "often":
-        price *= 1.12  # 经常看的商品涨价12%
-        adjustments.append(("高频浏览", "+12%"))
+        freq_change = base_price * 0.08
+        factors.append({"name": "急需(高频浏览)", "change": freq_change, "type": "加价"})
+    elif user_profile["frequency"] == "rare":
+        freq_change = -30  # 首次浏览提供30元固定折扣
+        factors.append({"name": "首次浏览刺激消费", "change": freq_change, "type": "优惠"})
+    else:  # sometimes
+        factors.append({"name": "正常浏览频率", "change": 0, "type": "中性"})
 
-    # 6. 是否使用优惠券（虚假降价）
+    current_price += freq_change
+
+    # 5. 退货量影响 - 修改：低退货率优惠提高到50元
+    return_change = 0
+    if user_profile["return_rate"] == "low":
+        # 低退货率用户，平台愿意给优惠 - 提高到50元固定优惠
+        return_change = -50
+        factors.append({"name": "低退货率优惠", "change": return_change, "type": "优惠"})
+    elif user_profile["return_rate"] == "high":
+        # 高退货率用户，平台承担风险，适当加价
+        return_change = base_price * 0.04
+        factors.append({"name": "高退货率风险溢价", "change": return_change, "type": "加价"})
+    else:
+        # 中等退货率，无影响
+        factors.append({"name": "中等退货率", "change": 0, "type": "中性"})
+
+    current_price += return_change
+
+    # 6. 优惠券
+    coupon_val = 0
     if user_profile["has_coupon"]:
-        adjustments.append(("优惠券已选择", "待抵扣"))
+        # 动态优惠券：溢价多了就给大额，溢价少给小额
+        if current_price > base_price * 1.15:
+            coupon_val = -50
+            factors.append({"name": "大额杀熟券", "change": coupon_val, "type": "优惠"})
+        else:
+            coupon_val = -15
+            factors.append({"name": "普通优惠券", "change": coupon_val, "type": "优惠"})
+        current_price += coupon_val
+    else:
+        factors.append({"name": "未使用优惠", "change": 0, "type": "中性"})
 
-    # 7. 会员等级
-    if user_profile["vip_level"] == "high":
-        price *= 0.88  # 高级会员88折
-        adjustments.append(("高级会员", "-12%"))
+    return round(current_price, 2), factors
 
-    # 添加随机波动 (±3%)
-    random_factor = np.random.uniform(0.97, 1.03)
-    price *= random_factor
-    adjustments.append(("实时波动", f"{((random_factor - 1) * 100):+.1f}%"))
+def normalize_spending(amount):
+    if amount <= 100: return 10
+    if amount <= 500: return 30
+    if amount <= 1000: return 50
+    if amount <= 3000: return 75
+    return 90
 
-    return round(price, 2), adjustments
+def map_activity_to_score(activity):
+    activity_map = {
+        "频繁使用": 90,
+        "每天固定时间查看价格": 70,
+        "一周一回或想起来才看": 40,
+        "必须购买时再使用": 10
+    }
+    return activity_map.get(activity, 50)
 
+def map_return_rate(return_option):
+    return_map = {
+        "没有/几乎不退货": "low",
+        "看商品质量偶尔退货": "medium",
+        "商品不合意或只留下合适的便退货": "high"
+    }
+    return return_map.get(return_option, "medium")
 
-# 生成用户数据（用于图表）
-def generate_user_data(num_users=50):
-    """生成模拟用户数据"""
-    users = []
-    for i in range(num_users):
-        user_type = np.random.choice(["new", "regular", "loyal"], p=[0.2, 0.5, 0.3])
-        spending = np.random.choice(["low", "medium", "high"], p=[0.3, 0.4, 0.3])
-        device = np.random.choice(["android", "ios"], p=[0.6, 0.4])
-        activity = np.random.choice(["low", "medium", "high"], p=[0.2, 0.5, 0.3])
+def get_spending_value(spending_range):
+    """将消费区间转换为具体数值（用于用户选择）"""
+    spending_map = {
+        "0-100元": 50,
+        "100-500元": 300,
+        "500-1000元": 750,
+        "1000-3000元": 2000,
+        "3000元以上": 4000
+    }
+    return spending_map.get(spending_range, 1000)
 
-        base_price = 199
-        price, _ = calculate_price(base_price, {
-            "user_type": user_type,
-            "spending_level": spending,
-            "device": device,
-            "activity": activity,
-            "frequency": "sometimes",
-            "has_coupon": False,
-            "vip_level": "none"
-        })
+def get_random_spending_value(spending_range):
+    """将消费区间转换为随机数值（用于群体模拟）"""
+    if spending_range == "0-100元":
+        return random.randint(0, 100)
+    elif spending_range == "100-500元":
+        return random.randint(100, 500)
+    elif spending_range == "500-1000元":
+        return random.randint(500, 1000)
+    elif spending_range == "1000-3000元":
+        return random.randint(1000, 3000)
+    elif spending_range == "3000元以上":
+        return random.randint(3000, 5000)  # 假设上限为5000
+    else:
+        return 1000
 
-        users.append({
-            "用户ID": i + 1,
-            "用户类型": {"new": "新用户", "regular": "普通用户", "loyal": "忠诚用户"}[user_type],
-            "消费水平": {"low": "低", "medium": "中", "high": "高"}[spending],
-            "设备类型": {"android": "Android", "ios": "iOS"}[device],
-            "活跃度": {"low": "低", "medium": "中", "high": "高"}[activity],
-            "看到的价格(元)": price
-        })
+# ==========================================
+# 4. 可视化组件
+# ==========================================
 
-    return pd.DataFrame(users)
+def create_factors_display(factors):
+    """创建因素影响展示"""
+    html = ""
+    for factor in factors:
+        change = factor["change"]
+        factor_class = "positive-impact" if change < 0 else "negative-impact" if change > 0 else ""
 
+        if change == 0:
+            change_text = "无影响"
+            change_display = "0"
+        else:
+            sign = "+" if change > 0 else ""
+            change_text = f"{sign}{change:.0f}元"
+            change_display = f"{sign}{change:.0f}"
 
-# 主程序
+        html += f"""
+        <div class="factor-card {factor_class}">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <div>
+                    <strong>{factor['name']}</strong>
+                    <div style="font-size: 0.9em; color: #888; margin-top: 4px;">{factor['type']}</div>
+                </div>
+                <div style="font-size: 1.2em; font-weight: bold; color: {'#2ecc71' if change < 0 else '#FF6B6B' if change > 0 else '#888'}">
+                    {change_display}
+                </div>
+            </div>
+        </div>
+        """
+    return html
+
+# ==========================================
+# 5. 主程序 UI (上中下结构)
+# ==========================================
+
 def main():
-    # 标题
-    st.markdown('<h1 class="main-header">🛒 网购平台个性化定价模拟器</h1>', unsafe_allow_html=True)
-    st.markdown("**探究为什么你和朋友看到的同一商品价格会相差80元**")
+    st.markdown('<h1 style="text-align:center; margin-bottom: 2rem;">🕵️‍♂️ 电商个性化定价模拟器</h1>', unsafe_allow_html=True)
 
-    # 创建两列布局
-    col1, col2 = st.columns([1, 1])
+    # -------------------------------------------------------
+    # 步骤 1: 设置用户特征 (Top)
+    # -------------------------------------------------------
+    st.markdown('<div class="step-header">👤 第一步：大数据如何标记你？</div>', unsafe_allow_html=True)
+    st.caption("调整下方的选项，看看算法如何给你打标签。")
 
-    with col1:
-        st.markdown('<h3 class="sub-header">🎯 1. 设置商品基础信息</h3>', unsafe_allow_html=True)
+    # 使用两行布局，每行3列，整齐排列
+    row1_c1, row1_c2, row1_c3 = st.columns(3)
 
-        # 商品选择
-        product = st.selectbox(
-            "选择商品类型",
-            ["运动鞋（参考价：199元）", "无线耳机（参考价：599元）",
-             "轻薄笔记本（参考价：4999元）", "智能手表（参考价：1299元）"]
+    with row1_c1:
+        st.markdown("**1. 用户身份**")
+        user_type = st.selectbox(
+            "label_1",
+            ["新用户", "普通用户", "老用户"],
+            index=1,
+            label_visibility="collapsed"
         )
+        type_map = {"新用户": "new", "普通用户": "regular", "老用户": "loyal"}
 
-        # 根据商品设置基础价格
-        base_prices = {
-            "运动鞋（参考价：199元）": 199,
-            "无线耳机（参考价：599元）": 599,
-            "轻薄笔记本（参考价：4999元）": 4999,
-            "智能手表（参考价：1299元）": 1299
-        }
-        base_price = base_prices[product]
-
-        st.markdown(f"**商品基础参考价：** ¥{base_price}")
-
-    with col2:
-        st.markdown('<h3 class="sub-header">👤 2. 设置你的用户特征</h3>', unsafe_allow_html=True)
-
-        # 用户特征输入
-        user_type = st.radio(
-            "用户类型",
-            ["新用户（首次使用）", "普通用户（偶尔使用）", "忠诚用户（高频使用）"],
-            horizontal=True
+    with row1_c2:
+        st.markdown("**2. 淘宝APP月消费**")
+        spending_range = st.selectbox(
+            "label_2",
+            ["0-100元", "100-500元", "500-1000元", "1000-3000元", "3000元以上"],
+            index=2,
+            label_visibility="collapsed"
         )
-        user_type_map = {
-            "新用户（首次使用）": "new",
-            "普通用户（偶尔使用）": "regular",
-            "忠诚用户（高频使用）": "loyal"
-        }
+        monthly_spend = get_spending_value(spending_range)
+        st.caption(f"¥{monthly_spend} (估算值)")
 
-        spending_level = st.select_slider(
-            "历史消费水平",
-            options=["低消费", "中等消费", "高消费"],
-            value="中等消费"
+    with row1_c3:
+        st.markdown("**3. 使用设备**")
+        device_display = st.radio(
+            "label_3",
+            ["Android", "苹果(iPhone)/鸿蒙"],
+            horizontal=True,
+            label_visibility="collapsed"
         )
-        spending_map = {"低消费": "low", "中等消费": "medium", "高消费": "high"}
+        device_val = "ios" if "苹果" in device_display else "android"
 
-        device = st.radio(
-            "常用设备",
-            ["Android手机", "iPhone (iOS)"],
-            horizontal=True
+    st.markdown("---") # 分割线
+
+    row2_c1, row2_c2, row2_c3 = st.columns(3)
+
+    with row2_c1:
+        st.markdown("**4. 平台活跃度**")
+        activity_level = st.selectbox(
+            "label_4",
+            ["频繁使用", "每天固定时间查看价格", "一周一回或想起来才看", "必须购买时再使用"],
+            index=0,
+            label_visibility="collapsed"
         )
-        device_map = {"Android手机": "android", "iPhone (iOS)": "ios"}
+        activity_score = map_activity_to_score(activity_level)
+        st.caption(f"活跃分: {activity_score}")
 
-        activity = st.select_slider(
-            "平台活跃度",
-            options=["不活跃", "一般活跃", "非常活跃"],
-            value="一般活跃"
+    with row2_c2:
+        st.markdown("**5. 浏览该商品频率**")
+        view_freq = st.selectbox(
+            "label_5",
+            ["第一次点开", "偶尔看看", "反复查看(急需)"],
+            index=1,
+            label_visibility="collapsed"
         )
-        activity_map = {"不活跃": "low", "一般活跃": "medium", "非常活跃": "high"}
+        freq_map = {"第一次点开": "rare", "偶尔看看": "sometimes", "反复查看(急需)": "often"}
 
-        frequency = st.radio(
-            "浏览此商品的频率",
-            ["第一次看", "看过几次", "经常查看"],
-            horizontal=True
+    with row2_c3:
+        st.markdown("**6. 退货习惯**")
+        return_option = st.selectbox(
+            "label_6",
+            ["没有/几乎不退货", "看商品质量偶尔退货", "商品不合意或只留下合适的便退货"],
+            index=1,
+            label_visibility="collapsed"
         )
-        freq_map = {"第一次看": "rare", "看过几次": "sometimes", "经常查看": "often"}
+        return_rate = map_return_rate(return_option)
 
-        has_coupon = st.checkbox("领过此商品优惠券")
-        vip_level = st.selectbox("会员等级", ["非会员", "普通会员", "高级会员"])
-        vip_map = {"非会员": "none", "普通会员": "medium", "高级会员": "high"}
+    st.markdown("---") # 分割线
 
-    # 分隔线
+    row3_c1, row3_c2, row3_c3 = st.columns([1, 2, 1])
+    with row3_c2:
+        st.markdown("**7. 优惠券**")
+        has_coupon = st.toggle("是否领取优惠券", value=True, label_visibility="collapsed")
+
+    # -------------------------------------------------------
+    # 步骤 2: 选择商品 (Middle)
+    # -------------------------------------------------------
+    st.markdown('<div class="step-header">🛍️ 第二步：选择你想购买的商品</div>', unsafe_allow_html=True)
+
+    # 使用列来限制选择框的宽度，不让它占满全屏
+    c_p1, c_p2, c_p3 = st.columns([1, 2, 1])
+    with c_p2:
+        selected_product_name = st.selectbox(
+            "点击下拉框选择商品",
+            list(PRODUCTS.keys()),
+            label_visibility="collapsed"
+        )
+        product_info = PRODUCTS[selected_product_name]
+
+    # -------------------------------------------------------
+    # 步骤 3: 揭晓价格 (Bottom)
+    # -------------------------------------------------------
+    st.markdown('<div class="step-header">💰 第三步：查看你的专属价格</div>', unsafe_allow_html=True)
+
+    # 无论是否揭晓，先在后台计算好价格
+    profile = {
+        "user_type": type_map[user_type],
+        "spending_level_norm": normalize_spending(monthly_spend),
+        "device": device_val,
+        "activity_score": activity_score,
+        "frequency": freq_map[view_freq],
+        "return_rate": return_rate,
+        "has_coupon": has_coupon
+    }
+    base_price = product_info['base']
+    final_price, factors = calculate_price_logic(base_price, profile)
+
+    # 逻辑分支：显示按钮 还是 显示结果
+    result_container = st.container()
+
+    with result_container:
+        if not st.session_state.is_revealed:
+            # === 状态 A: 神秘模式 (未揭晓) ===
+            st.markdown("""
+            <div style="text-align: center; padding: 40px; background: rgba(255,255,255,0.05); border-radius: 10px;">
+                <div style="font-size: 5rem;">🫣</div>
+                <h3>价格已生成，但被隐藏了</h3>
+                <p style="color: #888;">算法已经计算完毕，你敢看结果吗？</p>
+            </div>
+            """, unsafe_allow_html=True)
+
+            # 巨大的揭晓按钮
+            col_b1, col_b2, col_b3 = st.columns([1, 2, 1])
+            with col_b2:
+                if st.button("🚀 点击揭晓我的个性化价格", use_container_width=True, type="primary"):
+                    st.session_state.is_revealed = True
+                    st.rerun() # 立即刷新页面以显示结果
+
+        else:
+            # === 状态 B: 结果展示模式 (已揭晓) ===
+            # 顶部操作栏：隐藏按钮
+            c_hide_1, c_hide_2 = st.columns([8, 2])
+            with c_hide_2:
+                if st.button("🔒 隐藏价格 (重置)", use_container_width=True):
+                    st.session_state.is_revealed = False
+                    st.rerun()
+
+            # 价格核心展示区
+            diff = final_price - base_price
+            diff_pct = (diff / base_price) * 100
+
+            c_res_1, c_res_2, c_res_3 = st.columns([1, 1, 1])
+
+            with c_res_1:
+                st.markdown(f"""
+                <div class="metric-container">
+                    <div style="color:#888;">平台基准价</div>
+                    <h2 style="color:#888;">¥{base_price}</h2>
+                    <div style="font-size: 0.9em; color: #888;">{product_info['desc']}</div>
+                </div>
+                """, unsafe_allow_html=True)
+
+            with c_res_2:
+                # 动画效果提示
+                st.markdown(f"""
+                <div class="metric-container" style="border: 2px solid var(--primary); box-shadow: 0 0 15px rgba(78, 205, 196, 0.3);">
+                    <div style="color:var(--primary); font-weight:bold;">你的专属价</div>
+                    <div class="price-big">¥{final_price}</div>
+                    <div style="color:#888; margin-top: 10px;">基于你的用户画像</div>
+                </div>
+                """, unsafe_allow_html=True)
+
+            with c_res_3:
+                color = "#FF6B6B" if diff > 0 else "#2ecc71"
+                sign = "+" if diff > 0 else ""
+                st.markdown(f"""
+                <div class="metric-container">
+                    <div style="color:#888;">差异幅度</div>
+                    <h2 style="color:{color};">{sign}{diff:.1f}</h2>
+                    <div style="color:{color};">{sign}{diff_pct:.1f}%</div>
+                </div>
+                """, unsafe_allow_html=True)
+
+            # 影响因素分析
+            st.markdown("### 📊 价格影响因素分析")
+            st.markdown("以下是算法根据你的用户特征做出的价格调整：")
+
+            # 创建因素展示
+            factors_html = create_factors_display(factors)
+            st.markdown(factors_html, unsafe_allow_html=True)
+
+            # 总结说明
+            if diff > 0:
+                st.warning(f"💡 **分析结果**：你的用户画像显示你是高价值用户，算法判断你愿意支付更高价格，因此价格上浮{diff_pct:.1f}%")
+            elif diff < 0:
+                st.success(f"💡 **分析结果**：你的用户画像显示你是价格敏感型用户，算法为了吸引你购买，给予了{abs(diff_pct):.1f}%的优惠")
+            else:
+                st.info(f"💡 **分析结果**：你的用户画像较为均衡，算法给予你基准价格")
+
+            st.success("💡 **提示**：保持此区域打开，现在去上方调整「月消费」或「设备」，价格会实时跳动！")
+
+    # -------------------------------------------------------
+    # 底部：群体模拟 (可选)
+    # -------------------------------------------------------
     st.divider()
+    with st.expander("📊 查看大数据群体模拟 (100个样本)"):
+        if st.button("生成随机群体数据"):
+            users = []
+            for i in range(100):
+                u_type = np.random.choice(["new", "regular", "loyal"], p=[0.2, 0.6, 0.2])
+                u_spend_range = np.random.choice(["0-100元", "100-500元", "500-1000元", "1000-3000元", "3000元以上"])
+                # 使用随机值而不是固定值
+                u_spend = get_random_spending_value(u_spend_range)
+                u_device = np.random.choice(["android", "ios"], p=[0.6, 0.4])
+                u_activity = np.random.choice([90, 70, 40, 10], p=[0.2, 0.3, 0.3, 0.2])
+                u_return = np.random.choice(["low", "medium", "high"], p=[0.3, 0.5, 0.2])
 
-    # 计算按钮
-    if st.button("🚀 计算我的个性化价格", use_container_width=True):
-        # 构建用户画像
-        user_profile = {
-            "user_type": user_type_map[user_type],
-            "spending_level": spending_map[spending_level],
-            "device": device_map[device],
-            "activity": activity_map[activity],
-            "frequency": freq_map[frequency],
-            "has_coupon": has_coupon,
-            "vip_level": vip_map[vip_level]
-        }
+                # 简化模拟计算
+                sim_profile = {
+                    "user_type": u_type,
+                    "spending_level_norm": normalize_spending(u_spend),
+                    "device": u_device,
+                    "activity_score": u_activity,
+                    "frequency": "sometimes",
+                    "return_rate": u_return,
+                    "has_coupon": True
+                }
+                p, _ = calculate_price_logic(base_price, sim_profile)
+                users.append({"价格": p, "设备": u_device, "消费区间": u_spend_range, "消费值": u_spend, "退货率": u_return})
 
-        # 计算价格
-        final_price, adjustments = calculate_price(base_price, user_profile)
+            df_sim = pd.DataFrame(users)
+            # 修复报错：移除了 trendline="ols"
+            fig_sim = px.scatter(
+                df_sim, x="消费值", y="价格", color="设备",
+                title="消费能力 vs 价格分布 (100个随机用户样本)",
+                hover_data=["退货率", "消费区间"],
+                labels={"消费值": "月消费金额 (元)", "价格": "个性化价格 (元)"}
+            )
 
-        # 显示结果卡片
-        st.markdown('<h3 class="sub-header">💰 你的个性化价格</h3>', unsafe_allow_html=True)
+            # 更新图表布局
+            fig_sim.update_layout(
+                xaxis_title="月消费金额 (元)",
+                yaxis_title="个性化价格 (元)",
+                hovermode="closest"
+            )
 
-        # 价格卡片
-        col_a, col_b, col_c = st.columns(3)
+            st.plotly_chart(fig_sim, use_container_width=True)
 
-        with col_a:
-            st.markdown(f"""
-            <div class="price-card">
-                <div>基础价格</div>
-                <div class="price-number">¥{base_price}</div>
-            </div>
-            """, unsafe_allow_html=True)
+            # 显示统计信息
+            col_stats1, col_stats2, col_stats3 = st.columns(3)
+            with col_stats1:
+                avg_price = df_sim["价格"].mean()
+                st.metric("平均价格", f"¥{avg_price:.2f}")
 
-        with col_b:
-            st.markdown(f"""
-            <div class="price-card">
-                <div>最终价格</div>
-                <div class="price-number">¥{final_price}</div>
-                <div>差异: ¥{final_price - base_price:+.1f}</div>
-            </div>
-            """, unsafe_allow_html=True)
+            with col_stats2:
+                price_std = df_sim["价格"].std()
+                st.metric("价格标准差", f"¥{price_std:.2f}")
 
-        with col_c:
-            st.markdown(f"""
-            <div class="price-card">
-                <div>价格变动</div>
-                <div class="price-number">{(final_price / base_price * 100 - 100):+.1f}%</div>
-                <div>vs 基础价</div>
-            </div>
-            """, unsafe_allow_html=True)
-
-        # 价格构成详情
-        st.markdown("### 📊 价格构成分析")
-        adjustments_df = pd.DataFrame(adjustments, columns=["影响因素", "调整幅度"])
-        st.dataframe(adjustments_df, use_container_width=True, hide_index=True)
-
-        # 经济学解释
-        st.markdown("""
-        <div class="info-box">
-        <h4>💡 经济学原理解释</h4>
-        <p><strong>1. 三级价格歧视：</strong>平台根据用户画像（新老、消费能力、设备等）将用户分组，实施不同的定价策略。</p>
-        <p><strong>2. 消费者剩余提取：</strong>高消费能力、高活跃度的用户被认为价格敏感度低，平台通过涨价获取更多消费者剩余。</p>
-        <p><strong>3. 行为定价：</strong>基于你的浏览历史、购买记录等行为数据，动态调整价格，利用"锚定效应"影响你的支付意愿。</p>
-        <p><strong>4. 数据资产化：</strong>你的每一次点击、浏览都成为平台的"数据资产"，用于构建更精准的定价模型。</p>
-        </div>
-        """, unsafe_allow_html=True)
-
-        # 建议
-        st.markdown("""
-        <div class="info-box">
-        <h4>🔧 大学生应对策略</h4>
-        <ol>
-        <li><strong>清理浏览记录：</strong>定期清理缓存、使用无痕模式浏览商品</li>
-        <li><strong>比价技巧：</strong>用不同设备（Android vs iOS）、不同账号（新账号）查看同一商品</li>
-        <li><strong>购物时机：</strong>大促期间价格相对统一，差异较小</li>
-        <li><strong>价格追踪工具：</strong>使用比价插件（如喵喵折、慢慢买）查看历史价格</li>
-        <li><strong>理性消费：</strong>设置预算上限，避免被"个性化推荐"诱导过度消费</li>
-        </ol>
-        </div>
-        """, unsafe_allow_html=True)
-
-    # 数据分析部分
-    st.divider()
-    st.markdown('<h3 class="sub-header">📈 群体价格分布模拟</h3>', unsafe_allow_html=True)
-
-    # 生成模拟数据
-    if st.button("生成50个模拟用户的价格分布"):
-        df = generate_user_data(50)
-
-        # 图表1: 价格分布直方图
-        fig1 = px.histogram(
-            df,
-            x="看到的价格(元)",
-            nbins=20,
-            title="50个模拟用户看到的价格分布",
-            color_discrete_sequence=['#4ECDC4']
-        )
-        fig1.update_layout(
-            xaxis_title="价格 (元)",
-            yaxis_title="用户数量",
-            showlegend=False
-        )
-        st.plotly_chart(fig1, use_container_width=True)
-
-        # 图表2: 价格 vs 用户特征
-        fig2 = px.box(
-            df,
-            x="用户类型",
-            y="看到的价格(元)",
-            color="设备类型",
-            title="不同用户类型和设备的价格差异"
-        )
-        st.plotly_chart(fig2, use_container_width=True)
-
-        # 显示数据表
-        st.markdown("### 📋 模拟用户数据（前10行）")
-        st.dataframe(df.head(10), use_container_width=True)
-
-        # 价格差异统计
-        max_price = df["看到的价格(元)"].max()
-        min_price = df["看到的价格(元)"].min()
-        st.info(f"🔍 **模拟发现**：最高价 ¥{max_price} vs 最低价 ¥{min_price}，最大差异 **¥{max_price - min_price:.1f}**")
-
+            with col_stats3:
+                price_range = df_sim["价格"].max() - df_sim["价格"].min()
+                st.metric("价格范围", f"¥{price_range:.2f}")
 
 if __name__ == "__main__":
     main()
