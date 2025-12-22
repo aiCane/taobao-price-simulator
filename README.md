@@ -32,5 +32,5 @@
 
 ### 3. 运行应用
 ```bash
-  bashstreamlit run app.py
+  streamlit run app.py
 ```
