@@ -211,31 +211,56 @@ def calculate_price_logic(base_price, user_profile):
 
     current_price += freq_change
 
-    # 5. 退货量影响 - 修改：低退货率优惠提高到50元
+    # 5. 退货量影响 - 修改：根据购买时期和退货率决定优惠
     return_change = 0
-    if user_profile["return_rate"] == "low":
-        # 低退货率用户，平台愿意给优惠 - 提高到50元固定优惠
-        return_change = -50
-        factors.append({"name": "低退货率优惠", "change": return_change, "type": "优惠"})
-    elif user_profile["return_rate"] == "high":
-        # 高退货率用户，平台承担风险，适当加价
-        return_change = base_price * 0.04
-        factors.append({"name": "高退货率风险溢价", "change": return_change, "type": "加价"})
+    purchase_period = user_profile["purchase_period"]  # 新增：平时 or 特殊时期
+    return_rate = user_profile["return_rate"]
+    
+    # 特殊时期购买逻辑
+    if purchase_period == "special":
+        if return_rate == "high":
+            # 频繁退货，不享受特殊时期优惠
+            factors.append({"name": "特殊时期但频繁退货", "change": 0, "type": "中性"})
+        else:
+            # 一般或不退货，享受50元优惠券
+            return_change = -50
+            factors.append({"name": "大促期间优惠券", "change": return_change, "type": "优惠"})
     else:
-        # 中等退货率，无影响
-        factors.append({"name": "中等退货率", "change": 0, "type": "中性"})
+        # 平时购买逻辑
+        if return_rate == "low":
+            # 从不退货额外5元优惠
+            return_change = -5
+            factors.append({"name": "从不退货额外优惠", "change": return_change, "type": "优惠"})
+        elif return_rate == "medium":
+            factors.append({"name": "一般退货率", "change": 0, "type": "中性"})
+        else:
+            # 高退货率在平时无影响
+            factors.append({"name": "高退货率", "change": 0, "type": "中性"})
 
     current_price += return_change
 
-    # 6. 优惠券
-    coupon_val = user_profile.get("coupon_value", 0)  # 修改：使用用户选择的优惠券面值
+    # 6. 历史购买类型与当前商品差异 (新增)
+    history_category = user_profile["history_category"]
+    current_category = user_profile["current_category"]
+    
+    if history_category != current_category:
+        # 差异较大，给予小幅度优惠
+        category_change = -20
+        factors.append({"name": "尝试新品类优惠", "change": category_change, "type": "优惠"})
+        current_price += category_change
+    else:
+        # 相同或相似，无影响
+        factors.append({"name": "历史购买同类商品", "change": 0, "type": "中性"})
+
+    # 7. 优惠券 (已整合到退货逻辑中)
+    coupon_val = user_profile.get("coupon_value", 0)
     if coupon_val > 0:
-        current_price += coupon_val  # 优惠券是负值，所以用加号
+        current_price += coupon_val
         factors.append({"name": f"优惠券减免 {abs(coupon_val)}元", "change": coupon_val, "type": "优惠"})
     else:
         factors.append({"name": "未使用优惠", "change": 0, "type": "中性"})
 
-    # 7. 购物车中是否有相同/相似产品 (新增)
+    # 8. 购物车中是否有相同/相似产品 (新增)
     if user_profile.get("has_similar_in_cart", False):
         cart_change = 5  # 如果有相似产品，价格+5元
         current_price += cart_change
@@ -253,7 +278,7 @@ def normalize_spending(amount):
 def map_activity_to_score(activity):
     activity_map = {
         "每天都会看看价格": 80,
-        "一周一回或想起来才看": 50,
+        "一周只看两三回": 50,
         "必须购买时再使用": 20
     }
     return activity_map.get(activity, 50)
@@ -413,21 +438,18 @@ def main():
     row3_c1, row3_c2, row3_c3 = st.columns(3)
 
     with row3_c1:
-        st.markdown("**7. 你有特殊的优惠券吗**")
-        coupon_option = st.selectbox(
+        st.markdown("**7. 平时与特殊时期购买**")
+        purchase_period = st.selectbox(
             "label_7",
-            ["不使用优惠券", "10元优惠券", "30元优惠券", "50元优惠券"],
+            ["平时购买", "双11/双12/618等大促期间购买"],
             index=0,
             label_visibility="collapsed"
         )
-        # 映射优惠券选项到面值
-        coupon_map = {
-            "不使用优惠券": 0,
-            "10元优惠券": -10,
-            "30元优惠券": -30,
-            "50元优惠券": -50
+        # 映射购买时期到优惠券面值（根据退货逻辑在算法中处理）
+        purchase_period_map = {
+            "平时购买": "normal",
+            "双11/双12/618等大促期间购买": "special"
         }
-        coupon_value = coupon_map.get(coupon_option, 0)
 
     with row3_c2:
         st.markdown("**8. 购物车中有相似商品吗**")
@@ -441,8 +463,22 @@ def main():
         has_similar_in_cart = (has_similar == "是")
 
     with row3_c3:
-        st.markdown("**9. 你平常购买的商品是哪些？**")
-        # TODO
+        st.markdown("**9. 你之前主要购买的商品类型？**")
+        history_category_option = st.selectbox(
+            "label_9",
+            ["服装服饰类", "食品（水果蔬菜等）", "电子产品（电脑、手机、耳机等）", "美妆护肤类", "家居日用类", "其他"],
+            index=0,
+            label_visibility="collapsed"
+        )
+        # 将选项映射为类别（与商品配置库的category对应）
+        history_category_map = {
+            "服装服饰类": "服饰",
+            "食品（水果蔬菜等）": "食品",
+            "电子产品（电脑、手机、耳机等）": "数码",
+            "美妆护肤类": "美妆",
+            "家居日用类": "家居",
+            "其他": "其他"
+        }
 
     # -------------------------------------------------------
     # 步骤 2: 选择商品 (Middle)
@@ -472,8 +508,11 @@ def main():
         "activity_score": activity_score,
         "frequency": freq_map[view_freq],
         "return_rate": return_rate,
-        "coupon_value": coupon_value,  # 修改：使用优惠券面值
-        "has_similar_in_cart": has_similar_in_cart  # 新增：购物车相似商品
+        "purchase_period": purchase_period_map[purchase_period],
+        "history_category": history_category_map[history_category_option],
+        "current_category": product_info['category'],
+        "coupon_value": 0,  # 优惠券逻辑已整合到退货部分
+        "has_similar_in_cart": has_similar_in_cart
     }
     base_price = product_info['base']
     final_price, factors = calculate_price_logic(base_price, profile)
@@ -577,8 +616,9 @@ def main():
                 u_device = np.random.choice(["android", "ios"], p=[0.6, 0.4])
                 u_activity = np.random.choice([90, 70, 40, 10], p=[0.2, 0.3, 0.3, 0.2])
                 u_return = np.random.choice(["low", "medium", "high"], p=[0.3, 0.5, 0.2])
-                u_coupon = np.random.choice([0, -10, -30, -50], p=[0.4, 0.3, 0.2, 0.1])  # 模拟优惠券
-                u_similar = np.random.choice([True, False], p=[0.3, 0.7])  # 模拟购物车相似商品
+                u_period = np.random.choice(["normal", "special"], p=[0.7, 0.3])
+                u_history_cat = np.random.choice(["服饰", "食品", "数码", "美妆", "家居", "其他"], p=[0.3, 0.2, 0.2, 0.1, 0.1, 0.1])
+                u_similar = np.random.choice([True, False], p=[0.3, 0.7])
 
                 # 简化模拟计算
                 sim_profile = {
@@ -588,7 +628,10 @@ def main():
                     "activity_score": u_activity,
                     "frequency": "sometimes",
                     "return_rate": u_return,
-                    "coupon_value": u_coupon,
+                    "purchase_period": u_period,
+                    "history_category": u_history_cat,
+                    "current_category": product_info['category'],
+                    "coupon_value": 0,
                     "has_similar_in_cart": u_similar
                 }
                 p, _ = calculate_price_logic(base_price, sim_profile)
@@ -598,7 +641,8 @@ def main():
                     "消费区间": u_spend_range,
                     "消费值": u_spend,
                     "退货率": u_return,
-                    "优惠券": abs(u_coupon) if u_coupon < 0 else 0,
+                    "购买时期": u_period,
+                    "历史品类": u_history_cat,
                     "购物车相似": u_similar
                 })
 
@@ -607,7 +651,7 @@ def main():
             fig_sim = px.scatter(
                 df_sim, x="消费值", y="价格", color="设备",
                 title="消费能力 vs 价格分布 (100个随机用户样本)",
-                hover_data=["退货率", "消费区间", "优惠券", "购物车相似"],
+                hover_data=["退货率", "消费区间", "购买时期", "历史品类", "购物车相似"],
                 labels={"消费值": "月消费金额 (元)", "价格": "个性化价格 (元)"}
             )
 
