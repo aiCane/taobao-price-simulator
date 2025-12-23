@@ -222,9 +222,9 @@ def calculate_price_logic(base_price, user_profile):
             # 频繁退货，不享受特殊时期优惠
             factors.append({"name": "特殊时期但频繁退货", "change": 0, "type": "中性"})
         else:
-            # 一般或不退货，享受50元优惠券
-            return_change = -50
-            factors.append({"name": "大促期间优惠券", "change": return_change, "type": "优惠"})
+            # 一般或不退货，享受10%折扣
+            return_change = -base_price * 0.10  # 改为10%折扣
+            factors.append({"name": "大促期间折扣(10%)", "change": return_change, "type": "优惠"})
     else:
         # 平时购买逻辑
         if return_rate == "low":
@@ -240,27 +240,23 @@ def calculate_price_logic(base_price, user_profile):
     current_price += return_change
 
     # 6. 历史购买类型与当前商品差异 (新增)
-    history_category = user_profile["history_category"]
+    history_categories = user_profile["history_categories"]
     current_category = user_profile["current_category"]
     
-    if history_category != current_category:
-        # 差异较大，给予小幅度优惠
-        category_change = -20
-        factors.append({"name": "尝试新品类优惠", "change": category_change, "type": "优惠"})
-        current_price += category_change
+    if history_categories:  # 如果用户选择了历史购买类型
+        if current_category not in history_categories:
+            # 当前商品类型不在历史购买类型中，给予小幅度优惠
+            category_change = -20
+            factors.append({"name": "尝试新品类优惠", "change": category_change, "type": "优惠"})
+            current_price += category_change
+        else:
+            # 相同或相似，无影响
+            factors.append({"name": "历史购买同类商品", "change": 0, "type": "中性"})
     else:
-        # 相同或相似，无影响
-        factors.append({"name": "历史购买同类商品", "change": 0, "type": "中性"})
+        # 用户没有选择任何历史购买类型，视为无历史数据，无影响
+        factors.append({"name": "无历史购买记录", "change": 0, "type": "中性"})
 
-    # 7. 优惠券 (已整合到退货逻辑中)
-    coupon_val = user_profile.get("coupon_value", 0)
-    if coupon_val > 0:
-        current_price += coupon_val
-        factors.append({"name": f"优惠券减免 {abs(coupon_val)}元", "change": coupon_val, "type": "优惠"})
-    else:
-        factors.append({"name": "未使用优惠", "change": 0, "type": "中性"})
-
-    # 8. 购物车中是否有相同/相似产品 (新增)
+    # 7. 购物车中是否有相同/相似产品 (新增)
     if user_profile.get("has_similar_in_cart", False):
         cart_change = 5  # 如果有相似产品，价格+5元
         current_price += cart_change
@@ -445,7 +441,7 @@ def main():
             index=0,
             label_visibility="collapsed"
         )
-        # 映射购买时期到优惠券面值（根据退货逻辑在算法中处理）
+        # 映射购买时期
         purchase_period_map = {
             "平时购买": "normal",
             "双11/双12/618等大促期间购买": "special"
@@ -463,11 +459,13 @@ def main():
         has_similar_in_cart = (has_similar == "是")
 
     with row3_c3:
-        st.markdown("**9. 你之前主要购买的商品类型？**")
-        history_category_option = st.selectbox(
+        st.markdown("**9. 你之前购买过哪些类型的商品？**")
+        # 使用多选组件，允许用户选择多个类型
+        history_category_options = st.multiselect(
             "label_9",
             ["服装服饰类", "食品（水果蔬菜等）", "电子产品（电脑、手机、耳机等）", "美妆护肤类", "家居日用类", "其他"],
-            index=0,
+            default=["服装服饰类"],  # 默认选中一项
+            help="可多选，之前购买过的商品类型",
             label_visibility="collapsed"
         )
         # 将选项映射为类别（与商品配置库的category对应）
@@ -479,6 +477,8 @@ def main():
             "家居日用类": "家居",
             "其他": "其他"
         }
+        # 将用户选择转换为对应的类别列表
+        history_categories = [history_category_map[opt] for opt in history_category_options]
 
     # -------------------------------------------------------
     # 步骤 2: 选择商品 (Middle)
@@ -509,9 +509,8 @@ def main():
         "frequency": freq_map[view_freq],
         "return_rate": return_rate,
         "purchase_period": purchase_period_map[purchase_period],
-        "history_category": history_category_map[history_category_option],
+        "history_categories": history_categories,  # 修改：改为列表
         "current_category": product_info['category'],
-        "coupon_value": 0,  # 优惠券逻辑已整合到退货部分
         "has_similar_in_cart": has_similar_in_cart
     }
     base_price = product_info['base']
@@ -617,7 +616,12 @@ def main():
                 u_activity = np.random.choice([90, 70, 40, 10], p=[0.2, 0.3, 0.3, 0.2])
                 u_return = np.random.choice(["low", "medium", "high"], p=[0.3, 0.5, 0.2])
                 u_period = np.random.choice(["normal", "special"], p=[0.7, 0.3])
-                u_history_cat = np.random.choice(["服饰", "食品", "数码", "美妆", "家居", "其他"], p=[0.3, 0.2, 0.2, 0.1, 0.1, 0.1])
+                
+                # 随机选择历史购买类型（多个）
+                all_categories = ["服饰", "食品", "数码", "美妆", "家居", "其他"]
+                num_categories = np.random.randint(0, 4)  # 0-3个历史购买类型
+                u_history_cats = np.random.choice(all_categories, size=num_categories, replace=False).tolist()
+                
                 u_similar = np.random.choice([True, False], p=[0.3, 0.7])
 
                 # 简化模拟计算
@@ -629,9 +633,8 @@ def main():
                     "frequency": "sometimes",
                     "return_rate": u_return,
                     "purchase_period": u_period,
-                    "history_category": u_history_cat,
+                    "history_categories": u_history_cats,
                     "current_category": product_info['category'],
-                    "coupon_value": 0,
                     "has_similar_in_cart": u_similar
                 }
                 p, _ = calculate_price_logic(base_price, sim_profile)
@@ -642,7 +645,7 @@ def main():
                     "消费值": u_spend,
                     "退货率": u_return,
                     "购买时期": u_period,
-                    "历史品类": u_history_cat,
+                    "历史品类数": len(u_history_cats),
                     "购物车相似": u_similar
                 })
 
@@ -651,7 +654,7 @@ def main():
             fig_sim = px.scatter(
                 df_sim, x="消费值", y="价格", color="设备",
                 title="消费能力 vs 价格分布 (100个随机用户样本)",
-                hover_data=["退货率", "消费区间", "购买时期", "历史品类", "购物车相似"],
+                hover_data=["退货率", "消费区间", "购买时期", "历史品类数", "购物车相似"],
                 labels={"消费值": "月消费金额 (元)", "价格": "个性化价格 (元)"}
             )
 
