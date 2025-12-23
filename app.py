@@ -6,7 +6,6 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 import plotly.express as px
-import plotly.graph_objects as go
 import random
 
 # ==========================================
@@ -187,17 +186,14 @@ def calculate_price_logic(base_price, user_profile):
     act_change = 0
 
     # 重新设计活跃度影响逻辑
-    if activity_score >= 85:  # 频繁使用
-        act_change = base_price * 0.03  # 高粘性溢价
+    if activity_score >= 75:
+        act_change = base_price * 0.02  # 高粘性溢价
         factors.append({"name": "高粘性溢价", "change": act_change, "type": "加价"})
-    elif activity_score >= 65:  # 每天固定时间查看价格
-        act_change = base_price * 0.01  # 轻微溢价（平台认为有购买意图）
-        factors.append({"name": "固定查看意向溢价", "change": act_change, "type": "加价"})
-    elif activity_score >= 35:  # 一周一回或想起来才看
-        act_change = -base_price * 0.02  # 给予小优惠以刺激消费
-        factors.append({"name": "中等活跃度优惠", "change": act_change, "type": "优惠"})
-    else:  # 必须购买时再使用
-        act_change = -base_price * 0.05  # 给予较大优惠以吸引购买
+    elif activity_score >= 25:
+        act_change = base_price * 0.00  # 维持
+        factors.append({"name": "固定查看意向溢价", "change": act_change, "type": "中性"})
+    else:
+        act_change = -base_price * 0.03  # 给予优惠以吸引购买
         factors.append({"name": "促活优惠", "change": act_change, "type": "优惠"})
 
     current_price += act_change
@@ -232,18 +228,18 @@ def calculate_price_logic(base_price, user_profile):
     current_price += return_change
 
     # 6. 优惠券
-    coupon_val = 0
-    if user_profile["has_coupon"]:
-        # 动态优惠券：溢价多了就给大额，溢价少给小额
-        if current_price > base_price * 1.15:
-            coupon_val = -50
-            factors.append({"name": "大额杀熟券", "change": coupon_val, "type": "优惠"})
-        else:
-            coupon_val = -15
-            factors.append({"name": "普通优惠券", "change": coupon_val, "type": "优惠"})
-        current_price += coupon_val
+    coupon_val = user_profile.get("coupon_value", 0)  # 修改：使用用户选择的优惠券面值
+    if coupon_val > 0:
+        current_price += coupon_val  # 优惠券是负值，所以用加号
+        factors.append({"name": f"优惠券减免 {abs(coupon_val)}元", "change": coupon_val, "type": "优惠"})
     else:
         factors.append({"name": "未使用优惠", "change": 0, "type": "中性"})
+
+    # 7. 购物车中是否有相同/相似产品 (新增)
+    if user_profile.get("has_similar_in_cart", False):
+        cart_change = 5  # 如果有相似产品，价格+5元
+        current_price += cart_change
+        factors.append({"name": "购物车有相似产品", "change": cart_change, "type": "加价"})
 
     return round(current_price, 2), factors
 
@@ -256,10 +252,9 @@ def normalize_spending(amount):
 
 def map_activity_to_score(activity):
     activity_map = {
-        "频繁使用": 90,
-        "每天固定时间查看价格": 70,
-        "一周一回或想起来才看": 40,
-        "必须购买时再使用": 10
+        "每天都会看看价格": 80,
+        "一周一回或想起来才看": 50,
+        "必须购买时再使用": 20
     }
     return activity_map.get(activity, 50)
 
@@ -344,21 +339,21 @@ def main():
     st.markdown('<div class="step-header">👤 第一步：大数据如何标记你？</div>', unsafe_allow_html=True)
     st.caption("调整下方的选项，看看算法如何给你打标签。")
 
-    # 使用两行布局，每行3列，整齐排列
+    # 使用三行布局，每行3列，整齐排列
     row1_c1, row1_c2, row1_c3 = st.columns(3)
 
     with row1_c1:
-        st.markdown("**1. 用户身份**")
+        st.markdown("**1. 你的用户身份？**")
         user_type = st.selectbox(
             "label_1",
-            ["新用户", "普通用户", "老用户"],
+            ["我是新用户！", "我是普通用户;)", "我是老用户☝🏼"],
             index=1,
             label_visibility="collapsed"
         )
-        type_map = {"新用户": "new", "普通用户": "regular", "老用户": "loyal"}
+        type_map = {"我是新用户！": "new", "我是普通用户;)": "regular", "我是老用户☝🏼": "loyal"}
 
     with row1_c2:
-        st.markdown("**2. 淘宝APP月消费**")
+        st.markdown("**2. 你在淘宝APP 每月的消费？**")
         spending_range = st.selectbox(
             "label_2",
             ["0-100元", "100-500元", "500-1000元", "1000-3000元", "3000元以上"],
@@ -366,13 +361,13 @@ def main():
             label_visibility="collapsed"
         )
         monthly_spend = get_spending_value(spending_range)
-        st.caption(f"¥{monthly_spend} (估算值)")
+        st.caption(f"¥{monthly_spend} (中位数)")
 
     with row1_c3:
-        st.markdown("**3. 使用设备**")
+        st.markdown("**3. 你使用的设备？**")
         device_display = st.radio(
             "label_3",
-            ["Android", "苹果(iPhone)/鸿蒙"],
+            ["安卓(Android)", "苹果(iPhone)/鸿蒙"],
             horizontal=True,
             label_visibility="collapsed"
         )
@@ -383,18 +378,18 @@ def main():
     row2_c1, row2_c2, row2_c3 = st.columns(3)
 
     with row2_c1:
-        st.markdown("**4. 平台活跃度**")
+        st.markdown("**4. 你在淘宝的活跃度如何**")
         activity_level = st.selectbox(
             "label_4",
-            ["频繁使用", "每天固定时间查看价格", "一周一回或想起来才看", "必须购买时再使用"],
-            index=0,
+            ["每天都会看看价格", "一周只看两三回", "必须购买时再使用"],
+            index=1,
             label_visibility="collapsed"
         )
         activity_score = map_activity_to_score(activity_level)
         st.caption(f"活跃分: {activity_score}")
 
     with row2_c2:
-        st.markdown("**5. 浏览该商品频率**")
+        st.markdown("**5. 你浏览该商品频率多高**")
         view_freq = st.selectbox(
             "label_5",
             ["第一次点开", "偶尔看看", "反复查看(急需)"],
@@ -404,7 +399,7 @@ def main():
         freq_map = {"第一次点开": "rare", "偶尔看看": "sometimes", "反复查看(急需)": "often"}
 
     with row2_c3:
-        st.markdown("**6. 退货习惯**")
+        st.markdown("**6. 你有退货的习惯吗**")
         return_option = st.selectbox(
             "label_6",
             ["没有/几乎不退货", "看商品质量偶尔退货", "商品不合意或只留下合适的便退货"],
@@ -415,10 +410,39 @@ def main():
 
     st.markdown("---") # 分割线
 
-    row3_c1, row3_c2, row3_c3 = st.columns([1, 2, 1])
+    row3_c1, row3_c2, row3_c3 = st.columns(3)
+
+    with row3_c1:
+        st.markdown("**7. 你有特殊的优惠券吗**")
+        coupon_option = st.selectbox(
+            "label_7",
+            ["不使用优惠券", "10元优惠券", "30元优惠券", "50元优惠券"],
+            index=0,
+            label_visibility="collapsed"
+        )
+        # 映射优惠券选项到面值
+        coupon_map = {
+            "不使用优惠券": 0,
+            "10元优惠券": -10,
+            "30元优惠券": -30,
+            "50元优惠券": -50
+        }
+        coupon_value = coupon_map.get(coupon_option, 0)
+
     with row3_c2:
-        st.markdown("**7. 优惠券**")
-        has_coupon = st.toggle("是否领取优惠券", value=True, label_visibility="collapsed")
+        st.markdown("**8. 购物车中有相似商品吗**")
+        has_similar = st.selectbox(
+            "label_8",
+            ["否", "是"],
+            index=0,
+            help="购物车中是否有相同或相似产品",
+            label_visibility="collapsed"
+        )
+        has_similar_in_cart = (has_similar == "是")
+
+    with row3_c3:
+        st.markdown("**9. 你平常购买的商品是哪些？**")
+        # TODO
 
     # -------------------------------------------------------
     # 步骤 2: 选择商品 (Middle)
@@ -448,7 +472,8 @@ def main():
         "activity_score": activity_score,
         "frequency": freq_map[view_freq],
         "return_rate": return_rate,
-        "has_coupon": has_coupon
+        "coupon_value": coupon_value,  # 修改：使用优惠券面值
+        "has_similar_in_cart": has_similar_in_cart  # 新增：购物车相似商品
     }
     base_price = product_info['base']
     final_price, factors = calculate_price_logic(base_price, profile)
@@ -552,6 +577,8 @@ def main():
                 u_device = np.random.choice(["android", "ios"], p=[0.6, 0.4])
                 u_activity = np.random.choice([90, 70, 40, 10], p=[0.2, 0.3, 0.3, 0.2])
                 u_return = np.random.choice(["low", "medium", "high"], p=[0.3, 0.5, 0.2])
+                u_coupon = np.random.choice([0, -10, -30, -50], p=[0.4, 0.3, 0.2, 0.1])  # 模拟优惠券
+                u_similar = np.random.choice([True, False], p=[0.3, 0.7])  # 模拟购物车相似商品
 
                 # 简化模拟计算
                 sim_profile = {
@@ -561,17 +588,26 @@ def main():
                     "activity_score": u_activity,
                     "frequency": "sometimes",
                     "return_rate": u_return,
-                    "has_coupon": True
+                    "coupon_value": u_coupon,
+                    "has_similar_in_cart": u_similar
                 }
                 p, _ = calculate_price_logic(base_price, sim_profile)
-                users.append({"价格": p, "设备": u_device, "消费区间": u_spend_range, "消费值": u_spend, "退货率": u_return})
+                users.append({
+                    "价格": p,
+                    "设备": u_device,
+                    "消费区间": u_spend_range,
+                    "消费值": u_spend,
+                    "退货率": u_return,
+                    "优惠券": abs(u_coupon) if u_coupon < 0 else 0,
+                    "购物车相似": u_similar
+                })
 
             df_sim = pd.DataFrame(users)
             # 修复报错：移除了 trendline="ols"
             fig_sim = px.scatter(
                 df_sim, x="消费值", y="价格", color="设备",
                 title="消费能力 vs 价格分布 (100个随机用户样本)",
-                hover_data=["退货率", "消费区间"],
+                hover_data=["退货率", "消费区间", "优惠券", "购物车相似"],
                 labels={"消费值": "月消费金额 (元)", "价格": "个性化价格 (元)"}
             )
 
