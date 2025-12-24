@@ -12,7 +12,7 @@ import random
 # 1. 全局配置与状态管理
 # ==========================================
 st.set_page_config(
-    page_title="揭秘大数据杀熟：电商个性化定价模拟器",
+    page_title="揭秘大数据杀熟：让我们一起识破商家的小伎俩！",
     page_icon="🛒",
     layout="wide"  # 保持wide模式，虽然是上下结构，但内部可以用列来排版参数
 )
@@ -352,7 +352,7 @@ def create_factors_display(factors):
 # ==========================================
 
 def main():
-    st.markdown('<h1 style="text-align:center; margin-bottom: 2rem;">🕵️‍♂️ 电商个性化定价模拟器</h1>', unsafe_allow_html=True)
+    st.markdown('<h1 style="text-align:center; margin-bottom: 2rem;">🕵️‍♂️ 让我们一起识破商家的小伎俩！</h1>', unsafe_allow_html=True)
 
     # -------------------------------------------------------
     # 步骤 1: 设置用户特征 (Top)
@@ -516,6 +516,9 @@ def main():
     base_price = product_info['base']
     final_price, factors = calculate_price_logic(base_price, profile)
 
+    # 过滤掉中性的因素（只保留对价格有影响的）
+    effective_factors = [f for f in factors if f["change"] != 0]
+
     # 逻辑分支：显示按钮 还是 显示结果
     result_container = st.container()
 
@@ -586,19 +589,47 @@ def main():
             st.markdown("### 📊 价格影响因素分析")
             st.markdown("以下是算法根据你的用户特征做出的价格调整：")
 
-            # 创建因素展示
-            factors_html = create_factors_display(factors)
-            st.markdown(factors_html, unsafe_allow_html=True)
+            # 创建因素展示 - 只显示有效因素
+            if effective_factors:
+                factors_html = create_factors_display(effective_factors)
+                st.markdown(factors_html, unsafe_allow_html=True)
+            else:
+                st.info("📊 **分析结果**：基于你的用户画像，算法判断无需进行价格调整，你看到的是基准价格。")
 
             # 总结说明
             if diff > 0:
-                st.warning(f"💡 **分析结果**：你的用户画像显示你是高价值用户，算法判断你愿意支付更高价格，因此价格上浮{diff_pct:.1f}%")
+                st.warning(
+                    f"💡 **分析结果**：你的用户画像显示你是高价值用户，算法判断你愿意支付更高价格，因此价格上浮{diff_pct:.1f}%")
             elif diff < 0:
-                st.success(f"💡 **分析结果**：你的用户画像显示你是价格敏感型用户，算法为了吸引你购买，给予了{abs(diff_pct):.1f}%的优惠")
+                st.success(
+                    f"💡 **分析结果**：你的用户画像显示你是价格敏感型用户，算法为了吸引你购买，给予了{abs(diff_pct):.1f}%的优惠")
             else:
                 st.info(f"💡 **分析结果**：你的用户画像较为均衡，算法给予你基准价格")
 
             st.success("💡 **提示**：保持此区域打开，现在去上方调整「月消费」或「设备」，价格会实时跳动！")
+
+
+            # 小科普：什么是价格歧视 TODO: 还得练
+            with st.expander("📚 小科普：什么是价格歧视？", expanded=True):
+                st.markdown("""
+                **价格歧视**是指商家根据消费者的支付意愿、消费能力等特征，对相同的商品或服务制定不同价格的策略。
+
+                **主要依据**：
+                - **用户特征**：消费能力、设备类型、活跃度
+                - **行为数据**：浏览频率、购买历史、退货习惯
+                - **环境因素**：购买时机、购物车状态
+
+                **算法实现**：
+                电商平台通过大数据分析，构建用户画像并预测支付意愿，动态调整价格展示。
+                这种策略在经济学上被称为"一级价格歧视"或"个性化定价"。
+
+                **如何应对**：
+                1. 比较不同设备的价格
+                2. 清除浏览记录和cookie
+                3. 使用不同账号查看
+                4. 选择合适购买时机
+                """)
+
 
     # -------------------------------------------------------
     # 底部：群体模拟 (可选)
@@ -616,12 +647,12 @@ def main():
                 u_activity = np.random.choice([90, 70, 40, 10], p=[0.2, 0.3, 0.3, 0.2])
                 u_return = np.random.choice(["low", "medium", "high"], p=[0.3, 0.5, 0.2])
                 u_period = np.random.choice(["normal", "special"], p=[0.7, 0.3])
-                
+
                 # 随机选择历史购买类型（多个）
                 all_categories = ["服饰", "食品", "数码", "美妆", "家居", "其他"]
                 num_categories = np.random.randint(0, 4)  # 0-3个历史购买类型
                 u_history_cats = np.random.choice(all_categories, size=num_categories, replace=False).tolist()
-                
+
                 u_similar = np.random.choice([True, False], p=[0.3, 0.7])
 
                 # 简化模拟计算
