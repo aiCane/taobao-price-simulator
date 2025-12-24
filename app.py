@@ -8,7 +8,7 @@ import streamlit as st
 # 1. 全局配置与状态管理
 # ==========================================
 st.set_page_config(
-    page_title="揭秘大数据杀熟：让我们一起识破商家的小伎俩！",
+    page_title="揭秘价格歧视：让我们一起识破商家的小伎俩！",
     page_icon="🛒",
     layout="wide"  # 保持wide模式，虽然是上下结构，但内部可以用列来排版参数
 )
@@ -333,7 +333,7 @@ def create_factors_display(factors):
 # ==========================================
 
 def main():
-    st.markdown('<h1 style="text-align:center; margin-bottom: 2rem;">🕵️‍♂️ 让我们一起识破商家的小伎俩！</h1>', unsafe_allow_html=True)
+    st.markdown('<h1 style="text-align:center; margin-bottom: 2rem;">🕵️‍♂️ 什么？我买的东西更贵？</h1>', unsafe_allow_html=True)
     st.caption("声明：本网页中涉及的算法纯属虚构，比不上正常电商平台的精妙算法，也无任何关联")
 
     # -------------------------------------------------------
@@ -604,8 +604,6 @@ def main():
     - 三级价格歧视：根据不同市场或消费者群体的需求弹性差异定价。
     
     本网页涉及的“算法价格歧视”也以追求企业利润最大化为目标，表现逼近“一级价格歧视”。
-    
-    但本网页也不全是价格歧视，像你可能会发现：同时选退货过多，和在618大促时，购买商品是无法享用大促优惠的。
     """)
 
     # st.markdown('<div class="step-header">😗以本网页为例</div>', unsafe_allow_html=True)
