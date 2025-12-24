@@ -1,5 +1,5 @@
 """
-淘宝/京东个性化定价模拟器 (垂直流式布局 + 神秘模式)
+淘宝/京东个性化定价模拟器 (垂直流式布局)
 """
 
 import streamlit as st
@@ -183,7 +183,7 @@ def calculate_price_logic(base_price, user_profile):
 
     # 3. 活跃度 (粘性) - 修改：区分不同活跃度
     activity_score = user_profile["activity_score"]
-    act_change = 0
+    # act_change = 0
 
     # 重新设计活跃度影响逻辑
     if activity_score >= 75:
@@ -325,11 +325,11 @@ def create_factors_display(factors):
         factor_class = "positive-impact" if change < 0 else "negative-impact" if change > 0 else ""
 
         if change == 0:
-            change_text = "无影响"
+            # change_text = "无影响"
             change_display = "0"
         else:
             sign = "+" if change > 0 else ""
-            change_text = f"{sign}{change:.0f}元"
+            # change_text = f"{sign}{change:.0f}元"
             change_display = f"{sign}{change:.0f}"
 
         html += f"""
