@@ -16,7 +16,7 @@
 - [x] 应对策略建议  
 
 ## 在线体验
-部署链接：[Streamlit](https://taobao-price-simulator-0-1-1.streamlit.app)
+部署链接：[Streamlit](https://taobao-price-simulator.streamlit.app)
 
 ## 本地运行
 
