@@ -334,6 +334,7 @@ def create_factors_display(factors):
 
 def main():
     st.markdown('<h1 style="text-align:center; margin-bottom: 2rem;">🕵️‍♂️ 让我们一起识破商家的小伎俩！</h1>', unsafe_allow_html=True)
+    st.caption("声明：本网页中涉及的算法纯属虚构，比不上正常电商平台的精妙算法，也无任何关联")
 
     # -------------------------------------------------------
     # 步骤 1: 设置用户特征 (Top)
@@ -592,210 +593,22 @@ def main():
     # -------------------------------------------------------
     # 小科普：什么是价格歧视
     # -------------------------------------------------------
-    st.markdown('<div class="step-header">📚 小科普：什么是价格歧视？</div>', unsafe_allow_html=True)
-
-    tab1, tab2, tab3 = st.tabs(["🔍 识别现象", "⚡ 形成机制", "🛡️ 防范措施"])
-
-    with tab1:
-        st.markdown("""
-        <div class="factor-card">
-            <h4>>&nbsp; 价格歧视的本质</h4>
-            <p>价格歧视是指商家根据消费者的支付意愿、消费能力等特征，对相同的商品或服务制定不同价格的策略。</p>
-            <p>简单来说：同样的商品，不同的人看到不同的价格。</p>
-        </div>
-        """, unsafe_allow_html=True)
-
-        st.markdown("""
-        <div class="factor-card positive-impact">
-            <h4>>&nbsp; 数据收集维度</h4>
-            <ul>
-                <li><strong>设备信息</strong>：iOS/Android 用户差异对待</li>
-                <li><strong>消费能力</strong>：月消费金额、购买频次</li>
-                <li><strong>行为特征</strong>：浏览时长、加购频率</li>
-                <li><strong>地理位置</strong>：高收入地区倾向溢价</li>
-            </ul>
-        </div>
-        """, unsafe_allow_html=True)
-
-    with tab2:
-        st.markdown("""
-        <div class="factor-card negative-impact">
-            <h4>>&nbsp; 算法运作三步骤</h4>
-            <ol>
-                <li><strong>数据采集</strong>：收集用户个人信息、浏览记录、消费习惯</li>
-                <li><strong>用户画像</strong>：构建支付意愿、消费能力等标签体系</li>
-                <li><strong>差异定价</strong>：根据标签对不同用户展示不同价格</li>
-            </ol>
-        </div>
-        """, unsafe_allow_html=True)
-
-        st.markdown("""
-        <div class="factor-card">
-            <h4>>&nbsp; 存在的问题</h4>
-            <p>算法可能无法区分巧合关联和真正因果关系，导致错误判断。比如：</p>
-            <ul>
-                <li>使用高端设备 ≠ 愿意支付更高价格</li>
-                <li>频繁浏览 ≠ 支付能力强</li>
-                <li>历史购买 ≠ 未来偏好</li>
-            </ul>
-        </div>
-        """, unsafe_allow_html=True)
-
-    with tab3:
-        st.markdown("""
-        <div class="factor-card positive-impact">
-            <h4>>&nbsp; 个人防护策略</h4>
-            <ul>
-                <li><strong>多设备比价</strong>：在不同手机/浏览器查看价格</li>
-                <li><strong>清理痕迹</strong>：定期清除Cookie和浏览记录</li>
-                <li><strong>多账号验证</strong>：使用不同账号查看商品价格</li>
-                <li><strong>时机选择</strong>：避开特殊促销节点理性消费</li>
-            </ul>
-        </div>
-        """, unsafe_allow_html=True)
-
-        st.markdown("""
-        <div class="factor-card">
-            <h4>>&nbsp; 理性消费提醒</h4>
-            <p>了解个性化定价的存在，有助于我们：</p>
-            <ul>
-                <li>避免被算法影响购买决策</li>
-                <li>保持理性消费习惯</li>
-                <li>对比真实需求与推荐内容</li>
-            </ul>
-        </div>
-        """, unsafe_allow_html=True)
-
-    # -------------------------------------------------------
-    # 小科普：什么是价格歧视
-    # -------------------------------------------------------
-    st.markdown("""
-    <style>
-    .tab-container {
-        display: flex;
-        justify-content: center;
-        gap: 10px;
-        margin-bottom: 20px;
-    }
-    .tab-button {
-        background: linear-gradient(135deg, rgba(78, 205, 196, 0.1), rgba(78, 205, 196, 0.05));
-        border: 1px solid rgba(78, 205, 196, 0.3);
-        border-radius: 8px;
-        padding: 8px 16px;
-        cursor: pointer;
-        transition: all 0.3s;
-    }
-    .tab-button.active {
-        background: linear-gradient(135deg, rgba(78, 205, 196, 0.3), rgba(78, 205, 196, 0.15));
-        border-color: var(--primary);
-        color: var(--primary);
-        font-weight: 600;
-    }
-    </style>
-    """, unsafe_allow_html=True)
-
-    st.markdown('<div class="step-header">📚 小科普：什么是价格歧视？</div>', unsafe_allow_html=True)
-
-    # 手动创建居中的标签页
-    tabs_html = """
-    <div class="tab-container">
-        <div class="tab-button active" onclick="document.getElementById('tab1').style.display='block'; 
-            document.getElementById('tab2').style.display='none'; 
-            document.getElementById('tab3').style.display='none'; 
-            this.classList.add('active'); 
-            document.querySelectorAll('.tab-button')[1].classList.remove('active'); 
-            document.querySelectorAll('.tab-button')[2].classList.remove('active');">🔍 识别现象</div>
-        <div class="tab-button" onclick="document.getElementById('tab1').style.display='none'; 
-            document.getElementById('tab2').style.display='block'; 
-            document.getElementById('tab3').style.display='none'; 
-            this.classList.add('active'); 
-            document.querySelectorAll('.tab-button')[0].classList.remove('active'); 
-            document.querySelectorAll('.tab-button')[2].classList.remove('active');">⚡ 形成机制</div>
-        <div class="tab-button" onclick="document.getElementById('tab1').style.display='none'; 
-            document.getElementById('tab2').style.display='none'; 
-            document.getElementById('tab3').style.display='block'; 
-            this.classList.add('active'); 
-            document.querySelectorAll('.tab-button')[0].classList.remove('active'); 
-            document.querySelectorAll('.tab-button')[1].classList.remove('active');">🛡️ 防范措施</div>
-    </div>
-    """
-    st.markdown(tabs_html, unsafe_allow_html=True)
-
-    # Tab 1: 识别现象
-    st.markdown('<div id="tab1" style="display: block;">', unsafe_allow_html=True)
-    st.markdown("""
-    <div class="factor-card">
-        <h4>>&nbsp; 价格歧视的本质</h4>
-        <p>价格歧视是指商家根据消费者的支付意愿、消费能力等特征，对相同的商品或服务制定不同价格的策略。</p>
-        <p>简单来说：同样的商品，不同的人看到不同的价格。</p>
-    </div>
-    """, unsafe_allow_html=True)
+    st.markdown('<div class="step-header">📚小科普：什么是价格歧视？</div>', unsafe_allow_html=True)
 
     st.markdown("""
-    <div class="factor-card positive-impact">
-        <h4>>&nbsp; 数据收集维度</h4>
-        <ul>
-            <li><strong>设备信息</strong>：iOS/Android 用户差异对待</li>
-            <li><strong>消费能力</strong>：月消费金额、购买频次</li>
-            <li><strong>行为特征</strong>：浏览时长、加购频率</li>
-            <li><strong>地理位置</strong>：高收入地区倾向溢价</li>
-        </ul>
-    </div>
-    """, unsafe_allow_html=True)
-    st.markdown('</div>', unsafe_allow_html=True)
+    简单来说：这种现象在经济学上被称为 *价格歧视"*。它是指商家根据消费者的支付意愿、消费能力等特征，对相同的商品或服务制定不同价格的策略。
+    
+    价格歧视可以分为好几级：
+    - 一级价格歧视：厂商对每一单位产品均按消费者的最高支付意愿定价，从而攫取全部消费者剩余。
+    - 二级价格歧视：根据购买量或消费行为差异制定不同价格。
+    - 三级价格歧视：根据不同市场或消费者群体的需求弹性差异定价。
+    
+    本网页涉及的“算法价格歧视”也以追求企业利润最大化为目标，表现逼近“一级价格歧视”。
+    
+    但本网页也不全是价格歧视，像你可能会发现：同时选退货过多，和在618大促时，购买商品是无法享用大促优惠的。
+    """)
 
-    # Tab 2: 形成机制
-    st.markdown('<div id="tab2" style="display: none;">', unsafe_allow_html=True)
-    st.markdown("""
-    <div class="factor-card negative-impact">
-        <h4>>&nbsp; 算法运作三步骤</h4>
-        <ol>
-            <li><strong>数据采集</strong>：收集用户个人信息、浏览记录、消费习惯</li>
-            <li><strong>用户画像</strong>：构建支付意愿、消费能力等标签体系</li>
-            <li><strong>差异定价</strong>：根据标签对不同用户展示不同价格</li>
-        </ol>
-    </div>
-    """, unsafe_allow_html=True)
-
-    st.markdown("""
-    <div class="factor-card">
-        <h4>>&nbsp; 存在的问题</h4>
-        <p>算法可能无法区分巧合关联和真正因果关系，导致错误判断。比如：</p>
-        <ul>
-            <li>使用高端设备 ≠ 愿意支付更高价格</li>
-            <li>频繁浏览 ≠ 支付能力强</li>
-            <li>历史购买 ≠ 未来偏好</li>
-        </ul>
-    </div>
-    """, unsafe_allow_html=True)
-    st.markdown('</div>', unsafe_allow_html=True)
-
-    # Tab 3: 防范措施
-    st.markdown('<div id="tab3" style="display: none;">', unsafe_allow_html=True)
-    st.markdown("""
-    <div class="factor-card positive-impact">
-        <h4>>&nbsp; 个人防护策略</h4>
-        <ul>
-            <li><strong>多设备比价</strong>：在不同手机/浏览器查看价格</li>
-            <li><strong>清理痕迹</strong>：定期清除Cookie和浏览记录</li>
-            <li><strong>多账号验证</strong>：使用不同账号查看商品价格</li>
-            <li><strong>时机选择</strong>：避开特殊促销节点理性消费</li>
-        </ul>
-    </div>
-    """, unsafe_allow_html=True)
-
-    st.markdown("""
-    <div class="factor-card">
-        <h4>>&nbsp; 理性消费提醒</h4>
-        <p>了解个性化定价的存在，有助于我们：</p>
-        <ul>
-            <li>避免被算法影响购买决策</li>
-            <li>保持理性消费习惯</li>
-            <li>对比真实需求与推荐内容</li>
-        </ul>
-    </div>
-    """, unsafe_allow_html=True)
-    st.markdown('</div>', unsafe_allow_html=True)
+    # st.markdown('<div class="step-header">😗以本网页为例</div>', unsafe_allow_html=True)
 
 if __name__ == "__main__":
     main()
