@@ -1,0 +1,21 @@
+李丹_2021_算法歧视消费者:
+    type: Article
+    title: 算法歧视消费者：行为机制、损益界定与协同规制
+    author: 李丹
+    page-range: 17-33
+    date: 2021
+    parent:
+        type: Periodical
+        title: 上海财经大学学报
+        volume: 23
+        issue: 2
+
+杨成越_罗先觉_2018_算法歧视的综合治理初探:
+    type: Article
+    title: 算法歧视的综合治理初探
+    author: ["杨成越", "罗先觉"]
+    date: 2018
+    parent:
+        type: Periodical
+        title: 科学与社会
+        issue: 4
