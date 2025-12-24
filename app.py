@@ -3,10 +3,6 @@
 """
 
 import streamlit as st
-# import pandas as pd
-# import numpy as np
-# import plotly.express as px
-# import random
 
 # ==========================================
 # 1. 全局配置与状态管理
@@ -298,21 +294,6 @@ def get_spending_value(spending_range):
     }
     return spending_map.get(spending_range, 1000)
 
-# def get_random_spending_value(spending_range):
-#     """将消费区间转换为随机数值（用于群体模拟）"""
-#     if spending_range == "0-100元":
-#         return random.randint(0, 100)
-#     elif spending_range == "100-500元":
-#         return random.randint(100, 500)
-#     elif spending_range == "500-1000元":
-#         return random.randint(500, 1000)
-#     elif spending_range == "1000-3000元":
-#         return random.randint(1000, 3000)
-#     elif spending_range == "3000元以上":
-#         return random.randint(3000, 5000)  # 假设上限为5000
-#     else:
-#         return 1000
-
 # ==========================================
 # 4. 可视化组件
 # ==========================================
@@ -394,7 +375,7 @@ def main():
         )
         device_val = "ios" if "苹果" in device_display else "android"
 
-    st.markdown("---") # 分割线
+    # st.markdown("---") # 分割线
 
     row2_c1, row2_c2, row2_c3 = st.columns(3)
 
@@ -429,7 +410,7 @@ def main():
         )
         return_rate = map_return_rate(return_option)
 
-    st.markdown("---") # 分割线
+    # st.markdown("---") # 分割线
 
     row3_c1, row3_c2, row3_c3 = st.columns(3)
 
@@ -608,109 +589,213 @@ def main():
 
             st.success("💡 **提示**：保持此区域打开，现在去上方调整「月消费」或「设备」，价格会实时跳动！")
 
+    # -------------------------------------------------------
+    # 小科普：什么是价格歧视
+    # -------------------------------------------------------
+    st.markdown('<div class="step-header">📚 小科普：什么是价格歧视？</div>', unsafe_allow_html=True)
 
-            # 小科普：什么是价格歧视 TODO: 还得练
-            with st.expander("📚 小科普：什么是价格歧视？", expanded=True):
-                st.markdown("""
-                **价格歧视**是指商家根据消费者的支付意愿、消费能力等特征，对相同的商品或服务制定不同价格的策略。
+    tab1, tab2, tab3 = st.tabs(["🔍 识别现象", "⚡ 形成机制", "🛡️ 防范措施"])
 
-                **主要依据**：
-                - **用户特征**：消费能力、设备类型、活跃度
-                - **行为数据**：浏览频率、购买历史、退货习惯
-                - **环境因素**：购买时机、购物车状态
+    with tab1:
+        st.markdown("""
+        <div class="factor-card">
+            <h4>>&nbsp; 价格歧视的本质</h4>
+            <p>价格歧视是指商家根据消费者的支付意愿、消费能力等特征，对相同的商品或服务制定不同价格的策略。</p>
+            <p>简单来说：同样的商品，不同的人看到不同的价格。</p>
+        </div>
+        """, unsafe_allow_html=True)
 
-                **算法实现**：
-                电商平台通过大数据分析，构建用户画像并预测支付意愿，动态调整价格展示。
-                这种策略在经济学上被称为"一级价格歧视"或"个性化定价"。
+        st.markdown("""
+        <div class="factor-card positive-impact">
+            <h4>>&nbsp; 数据收集维度</h4>
+            <ul>
+                <li><strong>设备信息</strong>：iOS/Android 用户差异对待</li>
+                <li><strong>消费能力</strong>：月消费金额、购买频次</li>
+                <li><strong>行为特征</strong>：浏览时长、加购频率</li>
+                <li><strong>地理位置</strong>：高收入地区倾向溢价</li>
+            </ul>
+        </div>
+        """, unsafe_allow_html=True)
 
-                **如何应对**：
-                1. 比较不同设备的价格
-                2. 清除浏览记录和cookie
-                3. 使用不同账号查看
-                4. 选择合适购买时机
-                """)
+    with tab2:
+        st.markdown("""
+        <div class="factor-card negative-impact">
+            <h4>>&nbsp; 算法运作三步骤</h4>
+            <ol>
+                <li><strong>数据采集</strong>：收集用户个人信息、浏览记录、消费习惯</li>
+                <li><strong>用户画像</strong>：构建支付意愿、消费能力等标签体系</li>
+                <li><strong>差异定价</strong>：根据标签对不同用户展示不同价格</li>
+            </ol>
+        </div>
+        """, unsafe_allow_html=True)
 
+        st.markdown("""
+        <div class="factor-card">
+            <h4>>&nbsp; 存在的问题</h4>
+            <p>算法可能无法区分巧合关联和真正因果关系，导致错误判断。比如：</p>
+            <ul>
+                <li>使用高端设备 ≠ 愿意支付更高价格</li>
+                <li>频繁浏览 ≠ 支付能力强</li>
+                <li>历史购买 ≠ 未来偏好</li>
+            </ul>
+        </div>
+        """, unsafe_allow_html=True)
 
-    # # -------------------------------------------------------
-    # # 底部：群体模拟 (可选)
-    # # -------------------------------------------------------
-    # st.divider()
-    # with st.expander("📊 查看大数据群体模拟 (100个样本)"):
-    #     if st.button("生成随机群体数据"):
-    #         users = []
-    #         for i in range(100):
-    #             u_type = np.random.choice(["new", "regular", "loyal"], p=[0.2, 0.6, 0.2])
-    #             u_spend_range = np.random.choice(["0-100元", "100-500元", "500-1000元", "1000-3000元", "3000元以上"])
-    #             # 使用随机值而不是固定值
-    #             u_spend = get_random_spending_value(u_spend_range)
-    #             u_device = np.random.choice(["android", "ios"], p=[0.6, 0.4])
-    #             u_activity = np.random.choice([90, 70, 40, 10], p=[0.2, 0.3, 0.3, 0.2])
-    #             u_return = np.random.choice(["low", "medium", "high"], p=[0.3, 0.5, 0.2])
-    #             u_period = np.random.choice(["normal", "special"], p=[0.7, 0.3])
-    #
-    #             # 随机选择历史购买类型（多个）
-    #             all_categories = ["服饰", "食品", "数码", "美妆", "家居", "其他"]
-    #             num_categories = np.random.randint(0, 4)  # 0-3个历史购买类型
-    #             u_history_cats = np.random.choice(all_categories, size=num_categories, replace=False).tolist()
-    #
-    #             u_similar = np.random.choice([True, False], p=[0.3, 0.7])
-    #
-    #             # 简化模拟计算
-    #             sim_profile = {
-    #                 "user_type": u_type,
-    #                 "spending_level_norm": normalize_spending(u_spend),
-    #                 "device": u_device,
-    #                 "activity_score": u_activity,
-    #                 "frequency": "sometimes",
-    #                 "return_rate": u_return,
-    #                 "purchase_period": u_period,
-    #                 "history_categories": u_history_cats,
-    #                 "current_category": product_info['category'],
-    #                 "has_similar_in_cart": u_similar
-    #             }
-    #             p, _ = calculate_price_logic(base_price, sim_profile)
-    #             users.append({
-    #                 "价格": p,
-    #                 "设备": u_device,
-    #                 "消费区间": u_spend_range,
-    #                 "消费值": u_spend,
-    #                 "退货率": u_return,
-    #                 "购买时期": u_period,
-    #                 "历史品类数": len(u_history_cats),
-    #                 "购物车相似": u_similar
-    #             })
-    #
-    #         df_sim = pd.DataFrame(users)
-    #         # 修复报错：移除了 trendline="ols"
-    #         fig_sim = px.scatter(
-    #             df_sim, x="消费值", y="价格", color="设备",
-    #             title="消费能力 vs 价格分布 (100个随机用户样本)",
-    #             hover_data=["退货率", "消费区间", "购买时期", "历史品类数", "购物车相似"],
-    #             labels={"消费值": "月消费金额 (元)", "价格": "个性化价格 (元)"}
-    #         )
-    #
-    #         # 更新图表布局
-    #         fig_sim.update_layout(
-    #             xaxis_title="月消费金额 (元)",
-    #             yaxis_title="个性化价格 (元)",
-    #             hovermode="closest"
-    #         )
-    #
-    #         st.plotly_chart(fig_sim, use_container_width=True)
-    #
-    #         # 显示统计信息
-    #         col_stats1, col_stats2, col_stats3 = st.columns(3)
-    #         with col_stats1:
-    #             avg_price = df_sim["价格"].mean()
-    #             st.metric("平均价格", f"¥{avg_price:.2f}")
-    #
-    #         with col_stats2:
-    #             price_std = df_sim["价格"].std()
-    #             st.metric("价格标准差", f"¥{price_std:.2f}")
-    #
-    #         with col_stats3:
-    #             price_range = df_sim["价格"].max() - df_sim["价格"].min()
-    #             st.metric("价格范围", f"¥{price_range:.2f}")
+    with tab3:
+        st.markdown("""
+        <div class="factor-card positive-impact">
+            <h4>>&nbsp; 个人防护策略</h4>
+            <ul>
+                <li><strong>多设备比价</strong>：在不同手机/浏览器查看价格</li>
+                <li><strong>清理痕迹</strong>：定期清除Cookie和浏览记录</li>
+                <li><strong>多账号验证</strong>：使用不同账号查看商品价格</li>
+                <li><strong>时机选择</strong>：避开特殊促销节点理性消费</li>
+            </ul>
+        </div>
+        """, unsafe_allow_html=True)
+
+        st.markdown("""
+        <div class="factor-card">
+            <h4>>&nbsp; 理性消费提醒</h4>
+            <p>了解个性化定价的存在，有助于我们：</p>
+            <ul>
+                <li>避免被算法影响购买决策</li>
+                <li>保持理性消费习惯</li>
+                <li>对比真实需求与推荐内容</li>
+            </ul>
+        </div>
+        """, unsafe_allow_html=True)
+
+    # -------------------------------------------------------
+    # 小科普：什么是价格歧视
+    # -------------------------------------------------------
+    st.markdown("""
+    <style>
+    .tab-container {
+        display: flex;
+        justify-content: center;
+        gap: 10px;
+        margin-bottom: 20px;
+    }
+    .tab-button {
+        background: linear-gradient(135deg, rgba(78, 205, 196, 0.1), rgba(78, 205, 196, 0.05));
+        border: 1px solid rgba(78, 205, 196, 0.3);
+        border-radius: 8px;
+        padding: 8px 16px;
+        cursor: pointer;
+        transition: all 0.3s;
+    }
+    .tab-button.active {
+        background: linear-gradient(135deg, rgba(78, 205, 196, 0.3), rgba(78, 205, 196, 0.15));
+        border-color: var(--primary);
+        color: var(--primary);
+        font-weight: 600;
+    }
+    </style>
+    """, unsafe_allow_html=True)
+
+    st.markdown('<div class="step-header">📚 小科普：什么是价格歧视？</div>', unsafe_allow_html=True)
+
+    # 手动创建居中的标签页
+    tabs_html = """
+    <div class="tab-container">
+        <div class="tab-button active" onclick="document.getElementById('tab1').style.display='block'; 
+            document.getElementById('tab2').style.display='none'; 
+            document.getElementById('tab3').style.display='none'; 
+            this.classList.add('active'); 
+            document.querySelectorAll('.tab-button')[1].classList.remove('active'); 
+            document.querySelectorAll('.tab-button')[2].classList.remove('active');">🔍 识别现象</div>
+        <div class="tab-button" onclick="document.getElementById('tab1').style.display='none'; 
+            document.getElementById('tab2').style.display='block'; 
+            document.getElementById('tab3').style.display='none'; 
+            this.classList.add('active'); 
+            document.querySelectorAll('.tab-button')[0].classList.remove('active'); 
+            document.querySelectorAll('.tab-button')[2].classList.remove('active');">⚡ 形成机制</div>
+        <div class="tab-button" onclick="document.getElementById('tab1').style.display='none'; 
+            document.getElementById('tab2').style.display='none'; 
+            document.getElementById('tab3').style.display='block'; 
+            this.classList.add('active'); 
+            document.querySelectorAll('.tab-button')[0].classList.remove('active'); 
+            document.querySelectorAll('.tab-button')[1].classList.remove('active');">🛡️ 防范措施</div>
+    </div>
+    """
+    st.markdown(tabs_html, unsafe_allow_html=True)
+
+    # Tab 1: 识别现象
+    st.markdown('<div id="tab1" style="display: block;">', unsafe_allow_html=True)
+    st.markdown("""
+    <div class="factor-card">
+        <h4>>&nbsp; 价格歧视的本质</h4>
+        <p>价格歧视是指商家根据消费者的支付意愿、消费能力等特征，对相同的商品或服务制定不同价格的策略。</p>
+        <p>简单来说：同样的商品，不同的人看到不同的价格。</p>
+    </div>
+    """, unsafe_allow_html=True)
+
+    st.markdown("""
+    <div class="factor-card positive-impact">
+        <h4>>&nbsp; 数据收集维度</h4>
+        <ul>
+            <li><strong>设备信息</strong>：iOS/Android 用户差异对待</li>
+            <li><strong>消费能力</strong>：月消费金额、购买频次</li>
+            <li><strong>行为特征</strong>：浏览时长、加购频率</li>
+            <li><strong>地理位置</strong>：高收入地区倾向溢价</li>
+        </ul>
+    </div>
+    """, unsafe_allow_html=True)
+    st.markdown('</div>', unsafe_allow_html=True)
+
+    # Tab 2: 形成机制
+    st.markdown('<div id="tab2" style="display: none;">', unsafe_allow_html=True)
+    st.markdown("""
+    <div class="factor-card negative-impact">
+        <h4>>&nbsp; 算法运作三步骤</h4>
+        <ol>
+            <li><strong>数据采集</strong>：收集用户个人信息、浏览记录、消费习惯</li>
+            <li><strong>用户画像</strong>：构建支付意愿、消费能力等标签体系</li>
+            <li><strong>差异定价</strong>：根据标签对不同用户展示不同价格</li>
+        </ol>
+    </div>
+    """, unsafe_allow_html=True)
+
+    st.markdown("""
+    <div class="factor-card">
+        <h4>>&nbsp; 存在的问题</h4>
+        <p>算法可能无法区分巧合关联和真正因果关系，导致错误判断。比如：</p>
+        <ul>
+            <li>使用高端设备 ≠ 愿意支付更高价格</li>
+            <li>频繁浏览 ≠ 支付能力强</li>
+            <li>历史购买 ≠ 未来偏好</li>
+        </ul>
+    </div>
+    """, unsafe_allow_html=True)
+    st.markdown('</div>', unsafe_allow_html=True)
+
+    # Tab 3: 防范措施
+    st.markdown('<div id="tab3" style="display: none;">', unsafe_allow_html=True)
+    st.markdown("""
+    <div class="factor-card positive-impact">
+        <h4>>&nbsp; 个人防护策略</h4>
+        <ul>
+            <li><strong>多设备比价</strong>：在不同手机/浏览器查看价格</li>
+            <li><strong>清理痕迹</strong>：定期清除Cookie和浏览记录</li>
+            <li><strong>多账号验证</strong>：使用不同账号查看商品价格</li>
+            <li><strong>时机选择</strong>：避开特殊促销节点理性消费</li>
+        </ul>
+    </div>
+    """, unsafe_allow_html=True)
+
+    st.markdown("""
+    <div class="factor-card">
+        <h4>>&nbsp; 理性消费提醒</h4>
+        <p>了解个性化定价的存在，有助于我们：</p>
+        <ul>
+            <li>避免被算法影响购买决策</li>
+            <li>保持理性消费习惯</li>
+            <li>对比真实需求与推荐内容</li>
+        </ul>
+    </div>
+    """, unsafe_allow_html=True)
+    st.markdown('</div>', unsafe_allow_html=True)
 
 if __name__ == "__main__":
     main()
