@@ -19,3 +19,37 @@
         type: Periodical
         title: 科学与社会
         issue: 4
+
+Schumpeter_Nichol_1934_RobinsonEconomics:
+    type: Article
+    title: Robinson's Economics of Imperfect Competition
+    author: ["Schumpeter, Joseph A.", "Nichol, A. J."]
+    page-range: 249-259
+    date: 1934
+    url:
+        value: http://www.jstor.org/stable/1823265
+        date: 2025-12-24
+    parent:
+        type: Periodical
+        title: Journal of Political Economy
+        volume: 42
+        issue: 2
+
+陈昌建_2025_平台经济下算法决策的价格歧视研究:
+    type: Article
+    title: 平台经济下算法决策的价格歧视研究
+    title-alternative: Research on Price Discrimination through Algorithmic Decision-Making in the Platform Economy
+    author: 陈昌建
+    page-range: 261-267
+    date: 2025-04-16
+    serial-number:
+        doi: "10.12677/ass.2025.144287"
+    url:
+        value: https://www.hanspub.org/journal/ass
+    language: zh-Hans
+    parent:
+        type: Periodical
+        title: Advances in Social Sciences 社会科学前沿
+        volume: 14
+        issue: 4
+        date: 2025-04
