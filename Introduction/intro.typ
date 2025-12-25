@@ -1,4 +1,4 @@
-= “什么什么？我买的东西更贵？” 作品介绍
+= "让我们一起识破商家的小伎俩!" 作品介绍
 
 作品开源在#link("https://github.com/aiCane/taobao-price-simulator")[_GitHub_]上，可以clone下来，在本地体验。我也在_Streamlit Community_上部署了网页，可以通过点击#link("https://taobao-price-simulator-0-1-1.streamlit.app/")[「这里」]来体验，不过有些时候它会down掉，不是很好用。我还是推荐部署在本地使用。
 

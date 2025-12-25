@@ -333,7 +333,7 @@ def create_factors_display(factors):
 # ==========================================
 
 def main():
-    st.markdown('<h1 style="text-align:center; margin-bottom: 2rem;">🕵️‍♂️ 什么？我买的东西更贵？</h1>', unsafe_allow_html=True)
+    st.markdown('<h1 style="text-align:center; margin-bottom: 2rem;">🕵️‍♂️让我们一起识破商家的小伎俩！</h1>', unsafe_allow_html=True)
     st.caption("声明：本网页中涉及的算法纯属虚构，比不上正常电商平台的精妙算法，也无任何关联")
 
     # -------------------------------------------------------
