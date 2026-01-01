@@ -58,24 +58,24 @@
 
 有了灵感，搭好架子，我就拿着这个半成品到处找人"采访"。我问他们："现在的用户画像选项是不是有点少？你觉得还有哪些地方能再加什么？"然后把他们的想法做进选项里。又比如："这里加个对比图？""这个按钮放这儿顺手吗？"，就这样问一圈，改一遍，再问一圈，再改一遍…最后就成了现在这个样子。
 
-= 作品最后呈现出来的样子
+// = 作品最后呈现出来的样子
 
-#figure(
-  image("figures/app1.png", width: 80%),
-  caption: [第一步：描绘用户画像。在这里可以扮演不同消费习惯的人。],
-) <app1>
-#figure(
-  image("figures/app2.png", width: 80%),
-  caption: [第二步：选择商品。第三步：查看价格（暂时隐藏）。],
-) <app2>
-#figure(
-  image("figures/app3.png", width: 80%),
-  caption: [点击揭晓过后出现当前用户画像下的价格，旁边是原价。],
-) <app3>
-#figure(
-  image("figures/app4.png", width: 80%),
-  caption: [价格歧视的小科普，没有太复杂。],
-) <app4>
+// #figure(
+//   image("figures/app1.png", width: 80%),
+//   caption: [第一步：描绘用户画像。在这里可以扮演不同消费习惯的人。],
+// ) <app1>
+// #figure(
+//   image("figures/app2.png", width: 80%),
+//   caption: [第二步：选择商品。第三步：查看价格（暂时隐藏）。],
+// ) <app2>
+// #figure(
+//   image("figures/app3.png", width: 80%),
+//   caption: [点击揭晓过后出现当前用户画像下的价格，旁边是原价。],
+// ) <app3>
+// #figure(
+//   image("figures/app4.png", width: 80%),
+//   caption: [价格歧视的小科普，没有太复杂。],
+// ) <app4>
 
 = 作品的创意点、价格歧视和我的一些感想
 
